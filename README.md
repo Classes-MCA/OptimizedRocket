@@ -28,6 +28,11 @@ This repository holds the source code for the BYU ME EN 575 optimization project
 
 
 # Overview of Optimization Algorithms Implemented
+## Our Objective Function
+```
+[mass] = getRocketMass(x0);
+```
+where x0 = [rocketLength,orientation_1, orientation_2,...,orientation_N]. The orientations are defined as angles away from the vertical. They are constrained such that the first orientation is 0 degrees (nose up) and the final orientation is 90 degrees (nose sideways).
 
 # Reasoning for Other Methodological Decisions
 - Why use MATLAB?
