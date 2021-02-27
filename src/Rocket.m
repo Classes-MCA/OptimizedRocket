@@ -5,10 +5,10 @@ classdef Rocket < handle % inheriting the 'handle' class enables self-editing
     % rocket.
     
     properties
-        Location = [0,0,0] % meters relative to the launch site
+        Location = [0,0] % meters relative to the launch site
         Fuel = 100; % kilograms of fuel remaining
         Thrust = 1e6; % Newtons of force
-        Velocity = [0,0,0]; % measured in meters per second relative to the 
+        Velocity = [0,0]; % measured in meters per second relative to the 
                             % launch site
         Orientation = [0,0,1]; % The direction that the rocket nose is
                                % pointed, measured in x,y,z coordinates
