@@ -19,9 +19,7 @@ function getRocketCode()
     
     index = findstr(currentPath,'OptimizedRocket');
     
-    rocketPath = currentPath(1:index + 15);
-    
-    allPaths = genpath(rocketPath);
+    allPaths = genpath(currentPath);
     
     addpath(allPaths)
 

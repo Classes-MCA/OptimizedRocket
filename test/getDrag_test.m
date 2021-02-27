@@ -3,8 +3,8 @@ clear; close all;
 % Defining a rocket object
 myRocket = Rocket;
 
-velocity = 0:500:8e3; % m/s
-height = 0:10000:250e3; % meters
+velocity = 0:100:8e3; % m/s
+height = 0:100:250e3; % meters
 
 [Velocity, Height] = meshgrid(velocity,height);
 
@@ -23,7 +23,7 @@ for i = 1:length(velocity)
 end
 
 figure()
-surf(Height./1000, Velocity, drag)
+surf(Height./1000, Velocity, drag, 'MeshStyle','None')
 title('Rocket Drag')
 xlabel('Height (km)')
 ylabel('Velocity (m/s)')
