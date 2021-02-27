@@ -8,9 +8,22 @@
 
 function drag = getDrag(rocket)
 
+    % Extract information about the rocket's speed and altitude
     velocity = norm(rocket.Velocity);
     height = rocket.Location(2);
     
-    drag = log10(velocity / height + 1) * 1000;
+    % Calculate  information about the atmosphere
+    atmosphere = getAtmosphere(height);
+    density = atmosphere.Density;
+    
+    if velocity < atmosphere.SpeedOfSound
+        % Subsonic drag
+        drag = log10(velocity * density + 1) * 1000;
+        
+    else
+        % Drag increases a lot
+        drag = log10(velocity * density + 1) * 2000;
+        
+    end
 
 end
