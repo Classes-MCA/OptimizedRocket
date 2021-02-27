@@ -8,6 +8,9 @@
 
 function drag = getDrag(rocket)
 
+    velocity = norm(rocket.Velocity);
+    height = rocket.Location(2);
     
+    drag = log10(velocity / height + 1) * 1000;
 
 end
