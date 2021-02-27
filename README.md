@@ -13,6 +13,8 @@ This repository holds the source code for the BYU ME EN 575 optimization project
 - `docs/`: includes documentation and theory for the project
 - `src/`: contains the source code for the project such that one can download the code and it will automatically work properly when run
 - `test/`: a place to store temporary and permanent test files, code, and results. Some output produced from this code will be intentionally ignored to reduce the repository size
+- `getRocketCode.m`: a script that adds all of the files within this repository to your MATLAB path so you can use any file in any folder without needing to be inside that folder
+- `runOptimization.m`: the function that you can call (without arguments) to perform the optimization from start to finish.
 
 # Overview of Calculations Performed
 
