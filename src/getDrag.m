@@ -16,11 +16,11 @@ function drag = getDrag(rocket)
     atmosphere = getAtmosphere(height);
     density = atmosphere.Density;
     
-    if velocity < atmosphere.SpeedOfSound
+    if velocity < atmosphere.SpeedOfSound % If subsonic
         % Subsonic drag
         drag = log10(velocity * density + 1) * 1000;
         
-    else
+    else % If supersonic
         % Drag increases a lot
         drag = log10(velocity * density + 1) * 2000;
         
