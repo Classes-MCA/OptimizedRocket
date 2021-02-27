@@ -2,7 +2,7 @@
 This repository holds the source code for the BYU ME EN 575 optimization project done by Mark Anderson, Adam Jackson, and Spencer Stoltz.
 
 # Project Objective
-***"Minimize the fuel consumption of a two-stage rocket flying on a trajectory through the atmosphere and ultimately acheiving orbital velocity."***
+***"Minimize the mass of a two-stage rocket flying on a trajectory through the atmosphere and ultimately acheiving orbital velocity."***
 
 # Project Roles
 - **Spencer Stoltz**: calculate the thrust required by the rocket, in particular as the rocket changes mass during flight by consuming fuel and staging.
