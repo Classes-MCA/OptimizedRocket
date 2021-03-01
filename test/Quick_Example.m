@@ -17,7 +17,7 @@ bill = Rocket; % The name is arbitrary, but we'll just call it 'bill' for
 % the semicolon to see all of the different variables (properties) within 
 % the Rocket object. These include things like 'Location', 'Thrust',
 % 'Fuel', and 'Velocity'. These are editable like so:
-bill.Velocity = [0, 0, 5];
+bill.Velocity = [0, 5];
 bill.Fuel = 600;
 bill.Mass = 4500;
 
@@ -38,9 +38,9 @@ bill.updateFuel;
 % position and fuel:
 
 maxSteps = 10;
-trajectory = zeros(maxSteps,3);
+trajectory = zeros(maxSteps,2);
 for i = 1:maxSteps
-    bill.Velocity = [0, 0, bill.Velocity(3) + 10]; % Speed up after each step
+    bill.Velocity = [0, bill.Velocity(2) + 10]; % Speed up after each step
     bill.updateLocation;
     bill.updateFuel;
     trajectory(i,:) = bill.Location; % storing the trajectory
@@ -49,7 +49,7 @@ for i = 1:maxSteps
 end
 
 figure()
-plot(trajectory(:,3))
+plot(trajectory(:,2))
 xlabel('Step Number')
 ylabel('Upward Velocity (m/s)')
 title('Sample Rocket Velocity Plot')
