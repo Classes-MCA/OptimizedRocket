@@ -1,4 +1,8 @@
-function finalMass = objective(x)
+function usedMass = objective(x)
+
+    % Forcing the optimizer to meet these requirements for the end points
+    x(1) = 0; % meters
+    x(end) = 10000; % meters
 
     targetX = x(end); % meters
     targetY = 42e3; % meters
@@ -29,7 +33,7 @@ function finalMass = objective(x)
         theta = atan(deltaX/deltaY);
         
         % Calculate the drag
-        D = 0; % no drag for now
+        D = getDrag2(velocity(i-1),height); % simple model (not physics-based)
         
         % calculate the thrust
         Tx = (mass(i-1) * a + D) * sin(theta);
@@ -47,20 +51,20 @@ function finalMass = objective(x)
         
     end
     
-    finalMass = mass(end);
+    usedMass = mass(1) - mass(end);
     y = 0:deltaY:targetY - deltaY;
     
-    figure()
-    subplot(2,1,1)
-    plot(x./1000,y./1000)
-    title("Trajectory")
-    xlabel("X (km)")
-    ylabel("Y (km)")
-    
-    subplot(2,1,2)
-    plot(time,mass)
-    title("Mass")
-    xlabel("Time (s)")
-    ylabel("Rocket Mass (kg)")
+%     figure(1)
+%     subplot(2,1,1)
+%     plot(x./1000,y./1000)
+%     title("Trajectory")
+%     xlabel("X (km)")
+%     ylabel("Y (km)")
+%     
+%     subplot(2,1,2)
+%     plot(time,mass)
+%     title("Mass")
+%     xlabel("Time (s)")
+%     ylabel("Rocket Mass (kg)")
 
 end

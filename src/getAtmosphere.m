@@ -20,9 +20,9 @@ function atmosphere = getAtmosphere(height)
     atmosphere.Temperature = Tsl - 71.5 + 2 .* log(1 + exp(35.75 - 3.25*h) +...
                              exp(-3 + 0.0003.*h.^3));
                       
-%     highAltitudeCorrection = 0.5 .* (1 + 2/pi .* atan(-h/5 + maxHeight/5));
-%                          
-%     atmosphere.Temperature = atmosphere.Temperature .* highAltitudeCorrection;
+    highAltitudeCorrection = 0.5 .* (1 + 2/pi .* atan(-h/5 + maxHeight/5));
+                         
+    atmosphere.Temperature = atmosphere.Temperature .* highAltitudeCorrection;
                          
     atmosphere.Pressure = psl .* exp(-0.118.*h - 0.0015.*h.^2 ./ ...
                           (1 - 0.018.*h + 0.0011.*h.^2));
