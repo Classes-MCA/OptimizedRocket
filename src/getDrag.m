@@ -22,8 +22,7 @@ function drag = getDrag(rocket)
         
     else % If supersonic
         % Drag increases a lot
-        drag = log10(velocity * density + 1) * 2000;
-        
+        drag = log10(velocity * density + 1) * 2000;    
     end
 
 end

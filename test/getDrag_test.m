@@ -3,8 +3,8 @@ clear; close all;
 % Defining a rocket object
 myRocket = Rocket;
 
-velocity = 0:100:8e3; % m/s
-height = 0:100:250e3; % meters
+velocity = 0:100:2e3; % m/s
+height = 0:100:42e3; % meters
 
 [Velocity, Height] = meshgrid(velocity,height);
 
