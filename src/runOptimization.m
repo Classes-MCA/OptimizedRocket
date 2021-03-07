@@ -1,30 +1,83 @@
-clear; close all;
+function [xopt, fopt, iter, opt] = runOptimization()
 
-x0 = logspace(0,5,272) - 1;
-targetY = 250e3; % meters
-deltaY = targetY / length(x0); % meters
-y = 0:deltaY:targetY - deltaY;
+    x0 = logspace(0,2,50) - 1;
+    dx = 10e2/50;
+    x0 = 0:dx:(10e2-dx);
+    lb = zeros(1,length(x0));
+    ub = [];
+    targetY = 42e3; % meters
+    deltaY = targetY / length(x0); % meters
+    y = 0:deltaY:targetY - deltaY;
 
-options = optimoptions(@fminunc,...
-                       'Display','iter-detailed',...
-                       'MaxFunctionEvaluations',1e5,...
-                       'MaxIterations',1e3);
-[xstar,fstar] = fmincon(@objective,x0,options);
-
-figure()
-% subplot(2,1,1)
-plot(xstar./1000,y./1000)
-title("Trajectory")
-xlabel("X (km)")
-ylabel("Y (km)")
-
-function [f, c, ceq] = objcon(x)
-        [mass, stress] = truss(x);
-        f = mass;
-        c = stress.^2 - stressmax.^2; % scale
+    function [f, c, ceq] = objcon(x)
         
-        c = c./1000; % scaling
+        usedMass = trajectory(x);
+        f = usedMass;
         
-        ceq = [];
-end
+        subtractedValues = circshift(x,1) - x;
+        c = subtractedValues(2:end);
+        
+        ceq = x(1);
+    end
+
+    options = optimoptions(@fmincon,...
+                           'Display','iter-detailed',...
+                           'OutputFcn',@outfun,...
+                           'ScaleProblem',false,...
+                           'MaxFunctionEvaluations',10e4);
+        
+    iter = [];
+    opt = [];
+                       
+    function stop = outfun(x,optimValues,state)
+        iter = [iter;optimValues.iteration];
+        opt = [opt;optimValues.firstorderopt];
+        stop = false; % you can set your own stopping criteria
+    end
+
+    %----------------------------------------------
+    % Things below this line don't need to be changed
+
+    xlast = [];
+    flast = [];
+    clast = [];
+    ceqlast = [];
+
+    [xopt, fopt] = fmincon(@objective,x0,[],[],[],[],lb,ub,@con,options);
     
+    figure()
+    plot(xopt./1000,y./1000)
+    title("Trajectory")
+    xlabel("X (km)")
+    ylabel("Y (km)")
+
+    function f = objective(x)
+        
+        if ~isequal(x,xlast)
+            
+            [flast, clast, ceqlast] = objcon(x);
+            
+            xlast = x;
+            
+        end
+        
+        f = flast;
+        
+    end
+
+    function [c, ceq] = con(x)
+
+        if ~isequal(x,xlast)
+            
+            [flast, clast, ceqlast] = objcon(x);
+            
+            xlast = x;
+            
+        end
+        
+        c = clast;
+        ceq = ceqlast;
+        
+    end
+
+end

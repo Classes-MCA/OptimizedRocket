@@ -52,6 +52,7 @@ function usedMass = trajectory(x)
     end
     
     usedMass = mass(1) - mass(end);
+    usedMass = usedMass / 10000; % Scaling
     y = 0:deltaY:targetY - deltaY;
     
 %     figure(1)
