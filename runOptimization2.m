@@ -2,9 +2,11 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
 
     % -------- starting point and bounds ----------
     downrangeDistance = 10e3; % meters
-    xPoints = 20;
+    xPoints = 50;
+    exitAngle = 63.89; % Degrees
     dx = downrangeDistance/xPoints;
-    x0 = 0:dx:(downrangeDistance-dx);
+    x0 = 0:dx:downrangeDistance;
+    x0 = logspace(0,log10(downrangeDistance),xPoints+1);
     
     targetY = 42e3; % meters
     deltaY = targetY / length(x0); % meters
@@ -14,7 +16,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     x0 = log(x0(2:end)); % Removing the first zero
     
     lb = zeros(1,length(x0));
-    ub = [];
+    ub = ones(1,length(x0)) .* downrangeDistance;
     
     
     % ---------------------------------------------
@@ -49,44 +51,134 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         % Interpretation
         % f: the objective value
         f = trajectory(x);
-        f = f.usedMass / 1e4;
+        f = f.usedMass / 10000;
         
         % g: inequality constraints
-        constraints = trajectoryInequalityCon(x);
-        g = constraints.inequalityConstraints;
-        g = [];
+        constraints = inequalityConstraints(x);
+        g = constraints.inequalityConstraints ./ 100;
         
         % h: equality constraints, see first homework. There are none for
         % this homework
         % h = constraints.equalityConstraints;
-        constraints = trajectoryEqualityCon(x);
-        h = constraints.equalityConstraints ./ 1;
-        h = [];
+        constraints = equalityConstraints(x);
+        h = constraints.equalityConstraints;
         
         % df: simple derivative
         J = getJacobian(@trajectory,x,...
                         'Method',method);
                     
-        df = J(1).output;           
+        df = J(1).output;
         
         % dg: Jacobian of g.
-        J = getJacobian(@trajectoryInequalityCon,x,...
+        J = getJacobian(@inequalityConstraints,x,...
                         'Method',method);
         dg = J(1).output;
-        dg = [];
         
         % dh: Jacobian of h
-        J = getJacobian(@trajectoryEqualityCon,x,...
+        J = getJacobian(@equalityConstraints,x,...
                         'Method',method);
         dh = J(1).output;
-        dh = [];
 
     end
+
+    %--- EQUALITY CONSTRAINTS
+    function constraints = equalityConstraints(x)
+        
+        % Setting the endpoint
+        ceq = x(end) - downrangeDistance;
+        
+        % Setting the rocket tilt angle at the endpoint
+        deltaX = x(end) - x(end-1);
+        angle = atan(deltaX/deltaY) * 180/pi;
+        ceq = [ceq; abs(exitAngle - angle)];
+
+        constraints.equalityConstraints = ceq(:);
+        
+    end
+
+    %--- INEQUALITY CONSTRAINTS
+    function constraints = inequalityConstraints(x)
+        
+        % Each x-value must be larger than the previous (ie. forward
+        % motion)
+        subtractedValues = circshift(x,1) - x;
+        c = subtractedValues(2:end);
+        c = c(:);
+        
+        % Adding the constraint that each successive delta x has to be less
+        % than double the previous delta x
+        for i = 3:length(x)
+            
+            c = [c; (x(i) - x(i-1) - 2*(x(i-1) - x(i-2)))];
+            
+        end
+        
+        % Each point cannot be larger than the downrange distance
+%         c = [c; (x - downrangeDistance).'];
+        
+        constraints.inequalityConstraints = c(:);
+        
+    end
+
+    %---- TRAJECTORY FUNCTION
+    function flight = trajectory(x)
+        
+        % Forcing the optimizer to meet these requirements for the end points
+        x = [0,x]; % Putting the zero back in there
+
+        fuelExitVelocity = 2000; % meters/second
+
+        g = 9.8; % m/s^2
+        a = 5*g; % m/s^2
+
+        mass = zeros(1,length(x));
+        mass(1) = 1e5; % initial mass
+
+        velocity = zeros(1,length(x));
+        velocity(1) = 50;
+
+        time = zeros(1,length(x));
+
+        % Iterate over each x-position
+        for i = 2:length(x)
+
+            % Getting initial conditions going for this round
+            deltaX = x(i) - x(i-1);
+            height = (i-1) * deltaY;
+
+            % Calculate the tilt angle
+            theta = atan(deltaX/deltaY);
+
+            % Calculate the drag
+            D = getDrag2(velocity(i-1),height); % simple model (not physics-based)
+
+            % calculate the thrust
+            Tx = (mass(i-1) * a + D) * sin(theta);
+            Ty = (mass(i-1) * a + D) * cos(theta) + mass(i-1) * g;
+            T = sqrt(Tx^2 + Ty^2);
+
+            % calculate the change in mass
+            deltaTime = sqrt(deltaX^2 + deltaY^2) / velocity(i-1);
+            deltaMass = T / fuelExitVelocity * deltaTime;
+
+            % Update some values for the next round
+            velocity(i) = velocity(i-1) + a * deltaTime;
+            mass(i) = mass(i-1) - deltaMass;
+            time(i) = time(i-1) + deltaTime;
+
+        end
+
+        usedMass = mass(1) - mass(end);
+
+        flight.usedMass = usedMass;
+    
+    end
+
     % -------------------------------------------
 
     % ----------- options ----------------------------
     options = optimoptions('fmincon', ...
-        'Algorithm', 'active-set', ...  % choose one of: 'interior-point', 'sqp', 'active-set', 'trust-region-reflective'
+        'Algorithm', 'interior-point', ...  % choose one of: 'interior-point', 'sqp', 'active-set', 'trust-region-reflective'
         'HonorBounds', true, ...  % forces optimizer to always satisfy bounds at each iteration
         'Display', 'iter-detailed', ...  % display more information
         'MaxIterations', 1000, ...  % maximum number of iterations
@@ -119,7 +211,8 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         xlabel("X (km)")
         ylabel("Y (km)")
         %axis equal
-        %xlim([0,downrangeValues(end)/1000])
+        xlim([0,downrangeDistance/1000 + 2])
+        ylim([0,targetY/1000 * 1.1])
         drawnow()
         
     end

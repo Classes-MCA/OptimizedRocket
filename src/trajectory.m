@@ -14,7 +14,7 @@ function flight = trajectory(x)
     a = 3*g; % m/s^2
     
     mass = zeros(1,length(x));
-    mass(1) = 1e4; % initial mass
+    mass(1) = 1e5; % initial mass
     
     velocity = zeros(1,length(x));
     velocity(1) = 10;
@@ -56,17 +56,17 @@ function flight = trajectory(x)
     
     flight.usedMass = usedMass;
     
-%     figure(1)
-%     subplot(2,1,1)
-%     plot(x./1000,y./1000)
-%     title("Trajectory")
-%     xlabel("X (km)")
-%     ylabel("Y (km)")
-%     
-%     subplot(2,1,2)
-%     plot(time,mass)
-%     title("Mass")
-%     xlabel("Time (s)")
-%     ylabel("Rocket Mass (kg)")
+    figure(1)
+    subplot(2,1,1)
+    plot(x./1000,y./1000)
+    title("Trajectory")
+    xlabel("X (km)")
+    ylabel("Y (km)")
+    
+    subplot(2,1,2)
+    plot(time,mass)
+    title("Mass")
+    xlabel("Time (s)")
+    ylabel("Rocket Mass (kg)")
 
 end
