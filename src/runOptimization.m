@@ -1,11 +1,11 @@
 function [xopt, fopt, iter, opt] = runOptimization()
 
-    x0 = logspace(0,2,50) - 1;
-    dx = 10e2/50;
-    x0 = 0:dx:(10e2-dx);
+    x0 = logspace(0,4,20);
+    %dx = 10e2/20;
+    %x0 = 0:dx:(10e2-dx);
     lb = zeros(1,length(x0));
     ub = [];
-    targetY = 42e3; % meters
+    targetY = 10e3; % meters
     deltaY = targetY / length(x0); % meters
     y = 0:deltaY:targetY - deltaY;
 
@@ -14,8 +14,10 @@ function [xopt, fopt, iter, opt] = runOptimization()
         usedMass = trajectory(x);
         f = usedMass;
         
-        subtractedValues = circshift(x,1) - x;
+        subtractedValues = circshift(x,1) - x - 2;
         c = subtractedValues(2:end);
+        
+        %c = c ./ max(abs(c));
         
         ceq = x(1);
     end

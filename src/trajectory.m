@@ -1,4 +1,4 @@
-function usedMass = trajectory(x)
+function flight = trajectory(x)
 
     % Forcing the optimizer to meet these requirements for the end points
     x(1) = 0; % meters
@@ -52,8 +52,10 @@ function usedMass = trajectory(x)
     end
     
     usedMass = mass(1) - mass(end);
-    usedMass = usedMass / 10000; % Scaling
+    % usedMass = usedMass / 10000; % Scaling
     y = 0:deltaY:targetY - deltaY;
+    
+    flight.usedMass = usedMass;
     
 %     figure(1)
 %     subplot(2,1,1)

@@ -18,7 +18,7 @@ function drag = getDrag2(velocity,height)
         
     else % If supersonic
         % Drag increases a lot
-        drag = log10(velocity * density + 1) * 3e5;    
+        drag = log10(velocity * density + 1) * 1e5;    
     end
 
 end
