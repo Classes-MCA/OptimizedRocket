@@ -1,14 +1,22 @@
 function [xopt, fopt, exitflag, output] = runOptimization2()
 
     % -------- starting point and bounds ----------
-    x0 = logspace(0,4,50);
-    dx = 10e3/100;
-    x0 = 0:dx:(10e3-dx);
-    lb = zeros(1,length(x0));
-    ub = [];
+    downrangeDistance = 10e3; % meters
+    xPoints = 20;
+    dx = downrangeDistance/xPoints;
+    x0 = 0:dx:(downrangeDistance-dx);
+    
     targetY = 42e3; % meters
     deltaY = targetY / length(x0); % meters
     y = 0:deltaY:targetY - deltaY;
+    
+    % Making all of the x-inputs be of a similar order
+    x0 = log(x0(2:end)); % Removing the first zero
+    
+    lb = zeros(1,length(x0));
+    ub = [];
+    
+    
     % ---------------------------------------------
 
     % ------ linear constraints ----------------
@@ -27,6 +35,8 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     % ---- Objective and Constraints -------------
     function [f, g, h, df, dg, dh] = objcon(x)
 
+        x = exp(x);
+        
         % set objective/constraints here
         % f: objective
         % g: inequality constraints
@@ -42,12 +52,15 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         f = f.usedMass / 1e4;
         
         % g: inequality constraints
-        constraints = trajectorycon(x);
-        g = constraints.inequalityConstraints ./ 10;
+        constraints = trajectoryInequalityCon(x);
+        g = constraints.inequalityConstraints;
+        g = [];
         
         % h: equality constraints, see first homework. There are none for
         % this homework
         % h = constraints.equalityConstraints;
+        constraints = trajectoryEqualityCon(x);
+        h = constraints.equalityConstraints ./ 1;
         h = [];
         
         % df: simple derivative
@@ -57,14 +70,15 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         df = J(1).output;           
         
         % dg: Jacobian of g.
-        J = getJacobian(@trajectorycon,x,...
+        J = getJacobian(@trajectoryInequalityCon,x,...
                         'Method',method);
         dg = J(1).output;
+        dg = [];
         
-        % dh: Jacobian of h, which is nothing for this particular case.
-        %J = getJacobian(@trajectorycon,x,...
-        %                'Method',method);
-        %dh = J(1).output;
+        % dh: Jacobian of h
+        J = getJacobian(@trajectoryEqualityCon,x,...
+                        'Method',method);
+        dh = J(1).output;
         dh = [];
 
     end
@@ -98,11 +112,14 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         end
         stop = false; % you can set your own stopping criteria
         
-        plot(x./1000,y./1000)
+        downrangeValues = [0,exp(x)];
+        
+        plot(downrangeValues/1000,y./1000)
         title("Trajectory")
         xlabel("X (km)")
         ylabel("Y (km)")
-        xlim([0,x(end)/1000])
+        %axis equal
+        %xlim([0,downrangeValues(end)/1000])
         drawnow()
         
     end
@@ -158,10 +175,10 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     output.opt = opt;
     output.funcCallCount = funcCallCount;
     
-    figure()
-    plot(xopt./1000,y./1000)
-    title("Trajectory")
-    xlabel("X (km)")
-    ylabel("Y (km)")
+%     figure()
+%     plot(exp(xopt)./1000,y./1000)
+%     title("Trajectory")
+%     xlabel("X (km)")
+%     ylabel("Y (km)")
     
 end

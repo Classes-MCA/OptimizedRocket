@@ -1,8 +1,7 @@
 function flight = trajectory(x)
 
     % Forcing the optimizer to meet these requirements for the end points
-    x(1) = 0; % meters
-    x(end) = 10000; % meters
+    x = [0,x]; % Putting the zero back in there
 
     targetX = x(end); % meters
     targetY = 42e3; % meters
