@@ -3,10 +3,10 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     % -------- starting point and bounds ----------
     downrangeDistance = 10e3; % meters
     xPoints = 50;
-    exitAngle = 20; % Degrees
+    exitAngle = 70; % Degrees
     dx = downrangeDistance/xPoints;
     x0 = 0:dx:downrangeDistance;
-    x0 = logspace(0,log10(downrangeDistance),xPoints+1);
+    %x0 = logspace(0,log10(downrangeDistance),xPoints+1);
     
     targetY = 42e3; % meters
     deltaY = targetY / length(x0); % meters
@@ -36,6 +36,18 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     
     A = A(1:end-1,:);
     
+    % Making each successive difference between points be no more than 'q'
+    % times the previous difference
+    for j = 1:length(x0)-2
+        
+        q = 2;
+    
+        A(j + length(x0)-1,j) = q;
+        A(j + length(x0)-1,j+1) = -1 - q;
+        A(j + length(x0)-1,j+2) = 1;
+    
+    end
+    
     A = A(:,1:length(x0));
     
     b = zeros(length(A(:,1)),1);
@@ -45,7 +57,12 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     % Set the endpoint to be at the desired downrange location
     Aeq = zeros(1,length(x0));
     Aeq(end) = 1;
-    beq = downrangeDistance;
+    beq = log(downrangeDistance);
+    
+    % Set the initial deltaX to be non-zero
+%     Aeq(2,1) = 1;
+%     Aeq(2,2) = -1;
+%     beq(2) = 1;    
   
     % ------------------------------------------
     
@@ -83,21 +100,23 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         h = [];
         dh = [];
         
-        % g: inequality constraints
-        % constraints = inequalityConstraints(x);
-        % g = constraints.inequalityConstraints;
-        % dg: Jacobian of g.
-        % J = getJacobian(@inequalityConstraints,x,...
-        %                 'Method',method);
-        % dg = J(1).output;
+%         % g: inequality constraints
+%         constraints = inequalityConstraints(x);
+%         g = constraints.inequalityConstraints;
+%         
+%         % dg: Jacobian of g.
+%         J = getJacobian(@inequalityConstraints,x,...
+%                         'Method',method);
+%         dg = J(1).output;
         
-        % h: equality constraints, see first homework.
-        % constraints = equalityConstraints(x);
-        % h = constraints.equalityConstraints;
-        % dh: Jacobian of h
-        % J = getJacobian(@equalityConstraints,x,...
-        %                 'Method',method);
-        % dh = J(1).output;
+%         % h: equality constraints, see first homework.
+%         constraints = equalityConstraints(x);
+%         h = constraints.equalityConstraints;
+%         
+%         % dh: Jacobian of h
+%         J = getJacobian(@equalityConstraints,x,...
+%                         'Method',method);
+%         dh = J(1).output;
                
     end
 
@@ -105,7 +124,13 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     function constraints = equalityConstraints(x)
         
         % Setting the endpoint
+        % ceq = x(end) - downrangeDistance;
+        
         ceq = [];
+        
+        deltaX = x(end) - x(end-1);
+        angle = atan(deltaX/deltaY) * 180/pi;
+        ceq = angle - exitAngle;
         
         constraints.equalityConstraints = ceq;
         
@@ -115,6 +140,14 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     function constraints = inequalityConstraints(x)
         
         c = [];
+        
+        for i = 2:length(x)-2
+            
+            deltaX = x(end) - x(end-1);
+            angle = atan(deltaX/deltaY) * 180/pi;
+            c = [c,angle - exitAngle];
+            
+        end
         
         constraints.inequalityConstraints = c;
         
@@ -184,7 +217,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         'MaxIterations', 1000, ...  % maximum number of iterations
         'MaxFunctionEvaluations', 10000, ...  % maximum number of function calls
         'OptimalityTolerance', 1e-6, ...  % convergence tolerance on first order optimality
-        'ConstraintTolerance', 1e-9, ...  % convergence tolerance on constraints
+        'ConstraintTolerance', 1e-6, ...  % convergence tolerance on constraints
         'FiniteDifferenceType', 'central', ...  % if finite differencing, can also use central
         'SpecifyObjectiveGradient', true, ...  % supply gradients of objective
         'SpecifyConstraintGradient', true, ...  % supply gradients of constraints
@@ -193,7 +226,6 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         'OutputFcn',@outfun,...
         'StepTolerance',1e-12,...
         'FunctionTolerance',1e-12,...
-        'OptimalityTolerance',1e-6,...
         'ScaleProblem',true);
     % -------------------------------------------
     
