@@ -12,7 +12,7 @@ function drag = getDrag2(velocity,height)
     atmosphere = getAtmosphere(height);
     density = atmosphere.Density;
     
-    if velocity < atmosphere.SpeedOfSound % If subsonic
+    if real(velocity) < atmosphere.SpeedOfSound % If subsonic
         % Subsonic drag
         drag = log10(velocity * density + 1) * 1e5;
         
@@ -21,11 +21,11 @@ function drag = getDrag2(velocity,height)
         drag = log10(velocity * density + 1) * 1e5;    
     end
     
-    if height < 30e3
-        drag = 1e6;
-    else
-        drag = 0;
-    end
+%     if real(height) < 15e3
+%         drag = 1e6;
+%     else
+%         drag = 0;
+%     end
 
     % drag = 1e6 ./ (height - 1)^0.2;
     
