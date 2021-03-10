@@ -41,19 +41,21 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     
     end
     
-%     for k = 1:length(x0)
-%     
-%         A(k,k) = 5;
-%         A(k,k+1) = -5;
-%         A(k,k+2) = -1;
-%         A(k,k+3) = 1;
-%     
-%     end
+    A = A(1:end-1,:);
+    
+    for k = 1:length(x0)
+    
+        A(length(x0) + k,k) = 5;
+        A(length(x0) + k,k+1) = -5;
+        A(length(x0) + k,k+2) = -1;
+        A(length(x0) + k,k+3) = 1;
+    
+    end
     
     A = A(:,1:length(x0));
-    A(end,end) = 0;
+    A = A(1:end-1,:);
     
-    b = zeros(length(x0),1);
+    b = zeros(length(A(:,1)),1);
     
     % Linear Equality Constraints
 %     for k = 1:length(x0)-3
@@ -135,6 +137,8 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     %--- INEQUALITY CONSTRAINTS
     function constraints = inequalityConstraints(x)
         
+        c = [];
+        
         % Each x-value must be larger than the previous (ie. forward
         % motion)
 %         subtractedValues = circshift(x,1) - x;
@@ -162,8 +166,6 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         
         % Each point cannot be larger than the downrange distance
         % c = [c; (x - downrangeDistance).'];
-        
-        c = [];
         
         constraints.inequalityConstraints = c(:);
         
