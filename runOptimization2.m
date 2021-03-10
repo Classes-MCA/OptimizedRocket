@@ -32,16 +32,19 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     beq = [];
     
     % Linear Inequality Constraints
-    for k = 1:length(x0)-3
+    A = zeros(length(x0));
+    for k = 1:length(x0)
     
-        A(k,k) = 10;
-        A(k,k+1) = -10;
+        A(k,k) = 5;
+        A(k,k+1) = -5;
         A(k,k+2) = -1;
         A(k,k+3) = 1;
     
     end
     
-    b = zeros(length(x0)-3,1);
+    A = A(:,1:length(x0));
+    
+    b = zeros(length(x0),1);
     
     % Linear Equality Constraints
 %     for k = 1:length(x0)-3
