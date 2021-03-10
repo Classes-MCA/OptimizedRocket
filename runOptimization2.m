@@ -33,16 +33,25 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     
     % Linear Inequality Constraints
     A = zeros(length(x0));
+    
     for k = 1:length(x0)
     
-        A(k,k) = 5;
-        A(k,k+1) = -5;
-        A(k,k+2) = -1;
-        A(k,k+3) = 1;
+        A(k,k) = 1;
+        A(k,k+1) = -1;
     
     end
     
+%     for k = 1:length(x0)
+%     
+%         A(k,k) = 5;
+%         A(k,k+1) = -5;
+%         A(k,k+2) = -1;
+%         A(k,k+3) = 1;
+%     
+%     end
+    
     A = A(:,1:length(x0));
+    A(end,end) = 0;
     
     b = zeros(length(x0),1);
     
@@ -128,9 +137,9 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         
         % Each x-value must be larger than the previous (ie. forward
         % motion)
-        subtractedValues = circshift(x,1) - x;
-        c = subtractedValues(2:end);
-        c = c(:);
+%         subtractedValues = circshift(x,1) - x;
+%         c = subtractedValues(2:end);
+%         c = c(:);
         
         % Adding the constraint that each successive delta x has to be less
         % than double the previous delta x
