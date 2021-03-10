@@ -21,4 +21,6 @@ function drag = getDrag2(velocity,height)
         drag = log10(velocity * density + 1) * 1e5;    
     end
 
+    drag = 0;
+    
 end

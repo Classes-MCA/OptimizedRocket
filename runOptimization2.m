@@ -3,10 +3,10 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     % -------- starting point and bounds ----------
     downrangeDistance = 10e3; % meters
     xPoints = 50;
-    exitAngle = 63.89; % Degrees
+    exitAngle = 20; % Degrees
     dx = downrangeDistance/xPoints;
     x0 = 0:dx:downrangeDistance;
-    x0 = logspace(0,log10(downrangeDistance),xPoints+1);
+    %x0 = logspace(0,log10(downrangeDistance),xPoints+1);
     
     targetY = 42e3; % meters
     deltaY = targetY / length(x0); % meters
@@ -16,7 +16,8 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     x0 = log(x0(2:end)); % Removing the first zero
     
     lb = zeros(1,length(x0));
-    ub = ones(1,length(x0)) .* downrangeDistance;
+    lb = [];
+    ub = log(ones(1,length(x0)) .* downrangeDistance + 0.01);
     
     
     % ---------------------------------------------
@@ -51,15 +52,14 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         % Interpretation
         % f: the objective value
         f = trajectory(x);
-        f = f.usedMass / 10000;
+        f = f.usedMass;
         
         % g: inequality constraints
         constraints = inequalityConstraints(x);
-        g = constraints.inequalityConstraints ./ 100;
+        g = constraints.inequalityConstraints;
         
         % h: equality constraints, see first homework. There are none for
         % this homework
-        % h = constraints.equalityConstraints;
         constraints = equalityConstraints(x);
         h = constraints.equalityConstraints;
         
@@ -88,9 +88,9 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         ceq = x(end) - downrangeDistance;
         
         % Setting the rocket tilt angle at the endpoint
-        deltaX = x(end) - x(end-1);
-        angle = atan(deltaX/deltaY) * 180/pi;
-        ceq = [ceq; abs(exitAngle - angle)];
+%         deltaX = x(end) - x(end-1);
+%         angle = atan(deltaX/deltaY) * 180/pi;
+%         ceq = [ceq; exitAngle - angle];
 
         constraints.equalityConstraints = ceq(:);
         
@@ -98,6 +98,8 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
 
     %--- INEQUALITY CONSTRAINTS
     function constraints = inequalityConstraints(x)
+        
+        c = [];
         
         % Each x-value must be larger than the previous (ie. forward
         % motion)
@@ -109,7 +111,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         % than double the previous delta x
         for i = 3:length(x)
             
-            c = [c; (x(i) - x(i-1) - 2*(x(i-1) - x(i-2)))];
+            %c = [c; (x(i) - x(i-1) - 2*(x(i-1) - x(i-2)))];
             
         end
         
@@ -129,7 +131,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         fuelExitVelocity = 2000; % meters/second
 
         g = 9.8; % m/s^2
-        a = 5*g; % m/s^2
+        a = 3*g; % m/s^2
 
         mass = zeros(1,length(x));
         mass(1) = 1e5; % initial mass
@@ -140,37 +142,37 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         time = zeros(1,length(x));
 
         % Iterate over each x-position
-        for i = 2:length(x)
+        for k = 2:length(x)
 
             % Getting initial conditions going for this round
-            deltaX = x(i) - x(i-1);
-            height = (i-1) * deltaY;
+            deltaX = x(k) - x(k-1);
+            height = (k-1) * deltaY;
 
             % Calculate the tilt angle
             theta = atan(deltaX/deltaY);
 
             % Calculate the drag
-            D = getDrag2(velocity(i-1),height); % simple model (not physics-based)
+            D = getDrag2(velocity(k-1),height); % simple model (not physics-based)
 
             % calculate the thrust
-            Tx = (mass(i-1) * a + D) * sin(theta);
-            Ty = (mass(i-1) * a + D) * cos(theta) + mass(i-1) * g;
+            Tx = (mass(k-1) * a + D) * sin(theta);
+            Ty = (mass(k-1) * a + D) * cos(theta) + mass(k-1) * g;
             T = sqrt(Tx^2 + Ty^2);
 
             % calculate the change in mass
-            deltaTime = sqrt(deltaX^2 + deltaY^2) / velocity(i-1);
+            deltaTime = sqrt(deltaX^2 + deltaY^2) / velocity(k-1);
             deltaMass = T / fuelExitVelocity * deltaTime;
 
             % Update some values for the next round
-            velocity(i) = velocity(i-1) + a * deltaTime;
-            mass(i) = mass(i-1) - deltaMass;
-            time(i) = time(i-1) + deltaTime;
+            velocity(k) = velocity(k-1) + a * deltaTime;
+            mass(k) = mass(k-1) - deltaMass;
+            time(k) = time(k-1) + deltaTime;
 
         end
 
         usedMass = mass(1) - mass(end);
 
-        flight.usedMass = usedMass;
+        flight.usedMass = usedMass / 1e5;
     
     end
 
@@ -206,12 +208,12 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         
         downrangeValues = [0,exp(x)];
         
-        plot(downrangeValues/1000,y./1000)
+        plot(downrangeValues/1000,y./1000,'*')
         title("Trajectory")
         xlabel("X (km)")
         ylabel("Y (km)")
         %axis equal
-        xlim([0,downrangeDistance/1000 + 2])
+        xlim([0,(downrangeDistance/1000)*1.1])
         ylim([0,targetY/1000 * 1.1])
         drawnow()
         
