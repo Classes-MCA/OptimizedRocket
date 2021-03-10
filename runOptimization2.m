@@ -1,19 +1,20 @@
 function [xopt, fopt, exitflag, output] = runOptimization2()
 
     % -------- starting point and bounds ----------
-    downrangeDistance = 10e3; % meters
-    xPoints = 50;
+    downrangeDistance = 50e3; % meters
+    xPoints = 100;
     exitAngle = 20; % Degrees
     dx = downrangeDistance/xPoints;
     x0 = 0:dx:downrangeDistance;
     %x0 = logspace(0,log10(downrangeDistance),xPoints+1);
     
-    targetY = 42e3; % meters
+    targetY = 100e3; % meters
     deltaY = targetY / length(x0); % meters
     y = 0:deltaY:targetY - deltaY;
     
     % Making all of the x-inputs be of a similar order
     x0 = log(x0(2:end)); % Removing the first zero
+    %x0 = x0 + rand(1,length(x0))./10;
     
     lb = zeros(1,length(x0));
     lb = [];
@@ -29,6 +30,29 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     b = [];
     Aeq = [];
     beq = [];
+    
+    % Linear Inequality Constraints
+    for k = 1:length(x0)-3
+    
+        A(k,k) = 10;
+        A(k,k+1) = -10;
+        A(k,k+2) = -1;
+        A(k,k+3) = 1;
+    
+    end
+    
+    b = zeros(length(x0)-3,1);
+    
+    % Linear Equality Constraints
+%     for k = 1:length(x0)-3
+%     
+%         A(k,k) = 0;
+%         A(k,k+1) = 0;
+%         A(k,k+2) = 0;
+%         A(k,k+3) = 0;
+%     
+%     end
+    
     % ------------------------------------------
     
     % Counting the number of function calls
@@ -99,8 +123,6 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     %--- INEQUALITY CONSTRAINTS
     function constraints = inequalityConstraints(x)
         
-        c = [];
-        
         % Each x-value must be larger than the previous (ie. forward
         % motion)
         subtractedValues = circshift(x,1) - x;
@@ -109,14 +131,27 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         
         % Adding the constraint that each successive delta x has to be less
         % than double the previous delta x
-        for i = 3:length(x)
-            
-            %c = [c; (x(i) - x(i-1) - 2*(x(i-1) - x(i-2)))];
-            
-        end
+%         for i = 3:length(x)
+%             
+%             c = [c; (x(i) - x(i-1) - 10*(x(i-1) - x(i-2)))];
+%             
+%         end
+        
+        % The angles between iterations can't be too steep
+%         for i = 3:length(x)
+%             
+%             deltaXprevious = x(i-1) - x(i-2);
+%             deltaXcurrent = x(i) - x(i-1);
+%             thetaPrevious = atan(deltaXprevious/deltaY) * 180/pi;
+%             thetaCurrent = atan(deltaXcurrent/deltaY) * 180/pi;
+%             c = [c; thetaCurrent - thetaPrevious - 30];
+%             
+%         end
         
         % Each point cannot be larger than the downrange distance
-%         c = [c; (x - downrangeDistance).'];
+        % c = [c; (x - downrangeDistance).'];
+        
+        c = [];
         
         constraints.inequalityConstraints = c(:);
         
@@ -134,7 +169,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         a = 3*g; % m/s^2
 
         mass = zeros(1,length(x));
-        mass(1) = 1e5; % initial mass
+        mass(1) = 1e6; % initial mass
 
         velocity = zeros(1,length(x));
         velocity(1) = 50;
@@ -172,7 +207,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
 
         usedMass = mass(1) - mass(end);
 
-        flight.usedMass = usedMass / 1e5;
+        flight.usedMass = usedMass / 1e6;
     
     end
 
@@ -192,7 +227,10 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         'SpecifyConstraintGradient', true, ...  % supply gradients of constraints
         'CheckGradients', false, ...  % true if you want to check your supplied gradients against finite differencing
         'Diagnostics', 'on',... % display diagnotic information
-        'OutputFcn',@outfun);
+        'OutputFcn',@outfun,...
+        'StepTolerance',1e-12,...
+        'FunctionTolerance',1e-12,...
+        'OptimalityTolerance',1e-6);
     % -------------------------------------------
     
     opt = [];
@@ -209,7 +247,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         downrangeValues = [0,exp(x)];
         
         plot(downrangeValues/1000,y./1000,'*')
-        title("Trajectory")
+        title(strcat("Trajectory, Final Rocket Mass = ",sprintf('%03.0f',1e6 - optimValues.fval*1e5)," kg"))
         xlabel("X (km)")
         ylabel("Y (km)")
         %axis equal

@@ -20,7 +20,13 @@ function drag = getDrag2(velocity,height)
         % Drag increases a lot
         drag = log10(velocity * density + 1) * 1e5;    
     end
+    
+    if height < 30e3
+        drag = 1e6;
+    else
+        drag = 0;
+    end
 
-    drag = 0;
+    % drag = 1e6 ./ (height - 1)^0.2;
     
 end
