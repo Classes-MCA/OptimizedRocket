@@ -23,34 +23,34 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
 
     % ------ linear constraints ----------------
     
-%     %--- Linear Inequality Constraints
-%     A = zeros(length(x0));
+    %--- Linear Inequality Constraints
+    A = zeros(length(x0));
+    
+    % Make each point be further downrange than the one before it
+    for j = 1:length(x0)
+    
+        A(j,j) = 1;
+        A(j,j+1) = -1;
+    
+    end
+    
+    A = A(1:end-1,:);
+    
+    % Making each successive difference between points be no more than 'q'
+    % times the previous difference
+%     for j = 1:length(x0)-2
+%         
+%         q = 2;
 %     
-%     % Make each point be further downrange than the one before it
-%     for j = 1:length(x0)
-%     
-%         A(j,j) = 1;
-%         A(j,j+1) = -1;
+%         A(j + length(x0)-1,j) = q;
+%         A(j + length(x0)-1,j+1) = -1 - q;
+%         A(j + length(x0)-1,j+2) = 1;
 %     
 %     end
-%     
-%     A = A(1:end-1,:);
-%     
-%     % Making each successive difference between points be no more than 'q'
-%     % times the previous difference
-% %     for j = 1:length(x0)-2
-% %         
-% %         q = 2;
-% %     
-% %         A(j + length(x0)-1,j) = q;
-% %         A(j + length(x0)-1,j+1) = -1 - q;
-% %         A(j + length(x0)-1,j+2) = 1;
-% %     
-% %     end
-%     
-%     A = A(:,1:length(x0));
-%     
-%     b = zeros(length(A(:,1)),1) + 1000;
+    
+    A = A(:,1:length(x0));
+    
+    b = zeros(length(A(:,1)),1) + 1000;
 
     A = []; b = [];
     
@@ -97,14 +97,14 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         h = [];
         dh = [];
         
-        % g: inequality constraints
-        constraints = inequalityConstraints(x);
-        g = constraints.inequalityConstraints;
-        
-        % dg: Jacobian of g.
-        J = getJacobian(@inequalityConstraints,x,...
-                        'Method',method);
-        dg = J(1).output;
+%         % g: inequality constraints
+%         constraints = inequalityConstraints(x);
+%         g = constraints.inequalityConstraints;
+%         
+%         % dg: Jacobian of g.
+%         J = getJacobian(@inequalityConstraints,x,...
+%                         'Method',method);
+%         dg = J(1).output;
         
 %         % h: equality constraints, see first homework.
 %         constraints = equalityConstraints(x);
