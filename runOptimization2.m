@@ -23,34 +23,36 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
 
     % ------ linear constraints ----------------
     
-    %--- Linear Inequality Constraints
-    A = zeros(length(x0));
-    
-    % Make each point be further downrange than the one before it
-    for j = 1:length(x0)
-    
-        A(j,j) = 1;
-        A(j,j+1) = -1;
-    
-    end
-    
-    A = A(1:end-1,:);
-    
-    % Making each successive difference between points be no more than 'q'
-    % times the previous difference
-    for j = 1:length(x0)-2
-        
-        q = 2;
-    
-        A(j + length(x0)-1,j) = q;
-        A(j + length(x0)-1,j+1) = -1 - q;
-        A(j + length(x0)-1,j+2) = 1;
-    
-    end
-    
-    A = A(:,1:length(x0));
-    
-    b = zeros(length(A(:,1)),1);
+%     %--- Linear Inequality Constraints
+%     A = zeros(length(x0));
+%     
+%     % Make each point be further downrange than the one before it
+%     for j = 1:length(x0)
+%     
+%         A(j,j) = 1;
+%         A(j,j+1) = -1;
+%     
+%     end
+%     
+%     A = A(1:end-1,:);
+%     
+%     % Making each successive difference between points be no more than 'q'
+%     % times the previous difference
+% %     for j = 1:length(x0)-2
+% %         
+% %         q = 2;
+% %     
+% %         A(j + length(x0)-1,j) = q;
+% %         A(j + length(x0)-1,j+1) = -1 - q;
+% %         A(j + length(x0)-1,j+2) = 1;
+% %     
+% %     end
+%     
+%     A = A(:,1:length(x0));
+%     
+%     b = zeros(length(A(:,1)),1) + 1000;
+
+    A = []; b = [];
     
     %--- Linear Equality Constraints
     
@@ -58,11 +60,6 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     Aeq = zeros(1,length(x0));
     Aeq(end) = 1;
     beq = log(downrangeDistance);
-    
-    % Set the initial deltaX to be non-zero
-%     Aeq(2,1) = 1;
-%     Aeq(2,2) = -1;
-%     beq(2) = 1;    
   
     % ------------------------------------------
     
@@ -100,14 +97,14 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         h = [];
         dh = [];
         
-%         % g: inequality constraints
-%         constraints = inequalityConstraints(x);
-%         g = constraints.inequalityConstraints;
-%         
-%         % dg: Jacobian of g.
-%         J = getJacobian(@inequalityConstraints,x,...
-%                         'Method',method);
-%         dg = J(1).output;
+        % g: inequality constraints
+        constraints = inequalityConstraints(x);
+        g = constraints.inequalityConstraints;
+        
+        % dg: Jacobian of g.
+        J = getJacobian(@inequalityConstraints,x,...
+                        'Method',method);
+        dg = J(1).output;
         
 %         % h: equality constraints, see first homework.
 %         constraints = equalityConstraints(x);
@@ -123,14 +120,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     %--- EQUALITY CONSTRAINTS
     function constraints = equalityConstraints(x)
         
-        % Setting the endpoint
-        % ceq = x(end) - downrangeDistance;
-        
         ceq = [];
-        
-%         deltaX = x(end) - x(end-1);
-%         angle = atan(deltaX/deltaY) * 180/pi;
-%         ceq = angle - exitAngle;
         
         constraints.equalityConstraints = ceq;
         
@@ -141,18 +131,11 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         
         c = [];
         
-        % Each successive angle cannot be more than one degree different
-        % than the previous angle
-%         for i = 3:length(x)
-%             
-%             previousDeltaX = x(i-1) - x(i-2);
-%             currentDeltaX = x(i) - x(i-1);
-%             previousAngle = atan(previousDeltaX/deltaY) * 180/pi;
-%             currentAngle = atan(currentDeltaX/deltaY) * 180/pi;
-%             
-%             c = [c,abs(previousAngle - currentAngle) - 90];
-%             
-%         end
+        for i = 2:length(x)
+            
+            c = [c;x(i-1) - x(i) + 10];
+            
+        end
         
         constraints.inequalityConstraints = c;
         
