@@ -21,7 +21,7 @@ function drag = getDrag2(velocity,height)
         drag = log10(velocity * density + 1) * 1e5;    
     end
     
-    if real(height) < 15e3
+    if real(height) > 15e3 && real(height) < 25e3
         drag = 1e6;
     else
         drag = 0;

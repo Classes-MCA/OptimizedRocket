@@ -1,14 +1,14 @@
 function [xopt, fopt, exitflag, output] = runOptimization2()
 
     % -------- starting point and bounds ----------
-    downrangeDistance = 10e3; % meters
-    xPoints = 50;
+    downrangeDistance = 15e3; % meters
+    xPoints = 60;
     exitAngle = 70; % Degrees
     dx = downrangeDistance/xPoints;
     x0 = 0:dx:downrangeDistance;
     %x0 = logspace(0,log10(downrangeDistance),xPoints+1);
     
-    targetY = 42e3; % meters
+    targetY = 50e3; % meters
     deltaY = targetY / length(x0); % meters
     y = 0:deltaY:targetY - deltaY;
     
@@ -128,9 +128,9 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         
         ceq = [];
         
-        deltaX = x(end) - x(end-1);
-        angle = atan(deltaX/deltaY) * 180/pi;
-        ceq = angle - exitAngle;
+%         deltaX = x(end) - x(end-1);
+%         angle = atan(deltaX/deltaY) * 180/pi;
+%         ceq = angle - exitAngle;
         
         constraints.equalityConstraints = ceq;
         
@@ -141,13 +141,18 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         
         c = [];
         
-        for i = 2:length(x)-2
-            
-            deltaX = x(end) - x(end-1);
-            angle = atan(deltaX/deltaY) * 180/pi;
-            c = [c,angle - exitAngle];
-            
-        end
+        % Each successive angle cannot be more than one degree different
+        % than the previous angle
+%         for i = 3:length(x)
+%             
+%             previousDeltaX = x(i-1) - x(i-2);
+%             currentDeltaX = x(i) - x(i-1);
+%             previousAngle = atan(previousDeltaX/deltaY) * 180/pi;
+%             currentAngle = atan(currentDeltaX/deltaY) * 180/pi;
+%             
+%             c = [c,abs(previousAngle - currentAngle) - 90];
+%             
+%         end
         
         constraints.inequalityConstraints = c;
         
@@ -216,7 +221,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         'Display', 'iter-detailed', ...  % display more information
         'MaxIterations', 1000, ...  % maximum number of iterations
         'MaxFunctionEvaluations', 10000, ...  % maximum number of function calls
-        'OptimalityTolerance', 1e-6, ...  % convergence tolerance on first order optimality
+        'OptimalityTolerance', 1e-9, ...  % convergence tolerance on first order optimality
         'ConstraintTolerance', 1e-6, ...  % convergence tolerance on constraints
         'FiniteDifferenceType', 'central', ...  % if finite differencing, can also use central
         'SpecifyObjectiveGradient', true, ...  % supply gradients of objective
@@ -224,7 +229,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         'CheckGradients', false, ...  % true if you want to check your supplied gradients against finite differencing
         'Diagnostics', 'on',... % display diagnotic information
         'OutputFcn',@outfun,...
-        'StepTolerance',1e-12,...
+        'StepTolerance',1e-16,...
         'FunctionTolerance',1e-12,...
         'ScaleProblem',true);
     % -------------------------------------------
