@@ -4,30 +4,29 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     downrangeDistance = 15e3; % meters
     xPoints = 60;
     exitAngle = 70; % Degrees
-    dx = downrangeDistance/xPoints;
-    x0 = 0:dx:downrangeDistance;
-    %x0 = logspace(0,log10(downrangeDistance),xPoints+1);
+    dx = downrangeDistance/xPoints;    
+    deltaX0 = ones(xPoints,1) * dx;
     
     targetY = 50e3; % meters
-    deltaY = targetY / length(x0); % meters
+    deltaY = targetY / (length(deltaX0)+1); % meters
     y = 0:deltaY:targetY - deltaY;
     
-    % Making all of the x-inputs be of a similar order
-    x0 = log(x0(2:end)); % Removing the first zero
-    
     lb = [];
-    ub = log(ones(1,length(x0)) .* downrangeDistance + 0.01);
+    ub = [];
     
     
     % ---------------------------------------------
 
     % ------ linear constraints ----------------
     
-%     %--- Linear Inequality Constraints
-%     A = zeros(length(x0));
+    %--- Linear Inequality Constraints
+    
+    A = []; b = [];
+    
+%     A = zeros(length(deltaX0));
 %     
 %     % Make each point be further downrange than the one before it
-%     for j = 1:length(x0)
+%     for j = 1:length(deltaX0)
 %     
 %         A(j,j) = 1;
 %         A(j,j+1) = -1;
@@ -36,30 +35,32 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
 %     
 %     A = A(1:end-1,:);
 %     
-%     % Making each successive difference between points be no more than 'q'
-%     % times the previous difference
-% %     for j = 1:length(x0)-2
+% %     % Making each successive difference between points be no more than 'q'
+% %     % times the previous difference
+% %     for j = 1:length(deltaX0)-2
 % %         
 % %         q = 2;
 % %     
-% %         A(j + length(x0)-1,j) = q;
-% %         A(j + length(x0)-1,j+1) = -1 - q;
-% %         A(j + length(x0)-1,j+2) = 1;
+% %         A(j + length(deltaX0)-1,j) = q;
+% %         A(j + length(deltaX0)-1,j+1) = -1 - q;
+% %         A(j + length(deltaX0)-1,j+2) = 1;
 % %     
 % %     end
 %     
-%     A = A(:,1:length(x0));
+%     A = A(:,1:length(deltaX0));
 %     
-%     b = zeros(length(A(:,1)),1) + 1000;
+%     b = zeros(length(A(:,1)),1) - 10;
 
-    A = []; b = [];
+    Aeq = []; beq = [];
     
     %--- Linear Equality Constraints
     
-    % Set the endpoint to be at the desired downrange location
-    Aeq = zeros(1,length(x0));
-    Aeq(end) = 1;
-    beq = log(downrangeDistance);
+%     % Set the endpoints
+%     Aeq = zeros(2,length(x0));
+%     Aeq(1,1) = 1;
+%     Aeq(2,end) = 1;
+%     beq(1) = 0;
+%     beq(2) = downrangeDistance;
   
     % ------------------------------------------
     
@@ -68,9 +69,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     funcCount = 0;
 
     % ---- Objective and Constraints -------------
-    function [f, g, h, df, dg, dh] = objcon(x)
-
-        x = exp(x);
+    function [f, g, h, df, dg, dh] = objcon(deltaX)
         
         % set objective/constraints here
         % f: objective
@@ -82,11 +81,11 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         
         % Interpretation
         % f: the objective value
-        f = trajectory(x);
+        f = trajectory(deltaX);
         f = f.usedMass;
 
         % df: simple derivative
-        J = getJacobian(@trajectory,x,...
+        J = getJacobian(@trajectory,deltaX,...
                         'Method',method);
                     
         df = J(1).output;
@@ -97,39 +96,46 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         h = [];
         dh = [];
         
-        % g: inequality constraints
-        constraints = inequalityConstraints(x);
-        g = constraints.inequalityConstraints;
-        
-        % dg: Jacobian of g.
-        J = getJacobian(@inequalityConstraints,x,...
-                        'Method',method);
-        dg = J(1).output;
-        
-%         % h: equality constraints, see first homework.
-%         constraints = equalityConstraints(x);
-%         h = constraints.equalityConstraints;
+%         % g: inequality constraints
+%         constraints = inequalityConstraints(deltaX);
+%         g = constraints.inequalityConstraints;
 %         
-%         % dh: Jacobian of h
-%         J = getJacobian(@equalityConstraints,x,...
+%         % dg: Jacobian of g.
+%         J = getJacobian(@inequalityConstraints,deltaX,...
 %                         'Method',method);
-%         dh = J(1).output;
+%         dg = J(1).output;
+        
+        % h: equality constraints, see first homework.
+        constraints = equalityConstraints(deltaX);
+        h = constraints.equalityConstraints;
+        
+        % dh: Jacobian of h
+        J = getJacobian(@equalityConstraints,deltaX,...
+                        'Method',method);
+        dh = J(1).output;
                
     end
 
     %--- EQUALITY CONSTRAINTS
-    function constraints = equalityConstraints(x)
+    function constraints = equalityConstraints(deltaX)
         
         ceq = [];
+        
+        x = generateX(deltaX);
+        
+        ceq(1) = x(1);
+        ceq(2) = x(end) - downrangeDistance;
         
         constraints.equalityConstraints = ceq;
         
     end
 
     %--- INEQUALITY CONSTRAINTS
-    function constraints = inequalityConstraints(x)
+    function constraints = inequalityConstraints(deltaX)
         
         c = [];
+        
+        x = generateX(deltaX);
         
         for i = 2:length(x)
             
@@ -141,11 +147,24 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         
     end
 
-    %---- TRAJECTORY FUNCTION
-    function flight = trajectory(x)
+    %--- GENERATE X-ARRAY
+    function x = generateX(deltaX)
         
-        % Forcing the optimizer to meet these requirements for the end points
-        x = [0,x]; % Putting the zero back in there
+        x = [0];
+        for i = 2:length(deltaX)
+            
+            x(i) = x(i-1) + deltaX(i-1);
+            
+        end
+        
+        x(end+1) = downrangeDistance;
+        
+    end
+
+    %---- TRAJECTORY FUNCTION
+    function flight = trajectory(deltaX)
+        
+        x = generateX(deltaX);
 
         fuelExitVelocity = 2000; % meters/second
 
@@ -221,14 +240,14 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     funcCallCount = [];
     
     % Creating an output function
-    function stop = outfun(x,optimValues,state)
+    function stop = outfun(deltaX,optimValues,state)
         opt = [opt;optimValues.firstorderopt];
         if ~isempty(optimValues.firstorderopt)
             funcCallCount = [funcCallCount;funcCount];
         end
         stop = false; % you can set your own stopping criteria
         
-        downrangeValues = [0,exp(x)];
+        downrangeValues = generateX(deltaX);
         
         plot(downrangeValues/1000,y./1000,'*')
         title(strcat("Trajectory, Final Rocket Mass = ",sprintf('%03.0f',1e6 - optimValues.fval*1e5)," kg"))
@@ -287,7 +306,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     % ------------------------------------------------
 
     % call fmincon
-    [xopt, fopt, exitflag, output] = fmincon(@obj, x0, A, b, Aeq, beq, lb, ub, @con, options);
+    [xopt, fopt, exitflag, output] = fmincon(@obj, deltaX0, A, b, Aeq, beq, lb, ub, @con, options);
 
     output.opt = opt;
     output.funcCallCount = funcCallCount;
