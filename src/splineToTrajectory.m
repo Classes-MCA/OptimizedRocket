@@ -17,7 +17,7 @@ function [x,y] = splineToTrajectory(splinePoints)
     x_spline = splinePoints(:,1);
     y_spline = splinePoints(:,2);
     
-    deltaY = 1000;
+    deltaY = 100;
     
     y = 0:deltaY:max(y_spline);
     x = makima(y_spline,x_spline,y);

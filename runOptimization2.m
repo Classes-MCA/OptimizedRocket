@@ -1,20 +1,22 @@
 function [xopt, fopt, exitflag, output] = runOptimization2()
 
     % -------- starting point and bounds ----------
-    downrangeDistance = 15e3; % meters
-    xPoints = 5;
+    downrangeDistance = 250e3; % meters
+    xPoints = 10;
+    exitAngle = 60;
     dx = downrangeDistance/xPoints;
     x0 = 0:dx:downrangeDistance;
+    %x0 = [0,1000 3000 6000 10000];
+    x0 = log(x0(2:end));
     
-    targetY = 50e3; % meters
-    deltaY = targetY / length(x0); % meters
+    targetY = 250e3; % meters
+    deltaY = targetY / (length(x0)+1); % meters
     y = 0:deltaY:targetY - deltaY;
     
     % Making all of the x-inputs be of a similar order
     
     lb = [];
     ub = [];
-    
     
     % ---------------------------------------------
 
@@ -33,23 +35,21 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     
     A = A(1:end-1,:);
     
-    % Making each successive difference between points be no more than 'q'
-    % times the previous difference
-%     for j = 1:length(x0)-2
-%         
-%         q = 2;
-%     
-%         A(j + length(x0)-1,j) = q;
-%         A(j + length(x0)-1,j+1) = -1 - q;
-%         A(j + length(x0)-1,j+2) = 1;
-%     
-%     end
+    % Making each successive difference between points be larger
+    for j = 1:length(x0)-2
+    
+        A(j + length(x0)-1,j) = -1;
+        A(j + length(x0)-1,j+1) = 2;
+        A(j + length(x0)-1,j+2) = -1;
+    
+    end
     
     A = A(:,1:length(x0));
     
-    b = zeros(length(A(:,1)),1) + 1000;
+    b = zeros(length(A(:,1)),1);
+    %b(1:length(x0)-1) = ones(length(x0)-1,1);
 
-    A = []; b = [];
+    %A = []; b = [];
     
     %--- Linear Equality Constraints
     
@@ -57,6 +57,8 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     Aeq = zeros(1,length(x0));
     Aeq(end) = 1;
     beq = log(downrangeDistance);
+    
+    %Aeq = []; beq = [];
   
     % ------------------------------------------
     
@@ -66,9 +68,6 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
 
     % ---- Objective and Constraints -------------
     function [f, g, h, df, dg, dh] = objcon(x)
-
-        splinePoints = [x',y'];
-        [x,~] = splineToTrajectory(splinePoints);
         
         % set objective/constraints here
         % f: objective
@@ -95,30 +94,41 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         h = [];
         dh = [];
         
-%         % g: inequality constraints
-%         constraints = inequalityConstraints(x);
-%         g = constraints.inequalityConstraints;
-%         
-%         % dg: Jacobian of g.
-%         J = getJacobian(@inequalityConstraints,x,...
-%                         'Method',method);
-%         dg = J(1).output;
+        % g: inequality constraints
+        constraints = inequalityConstraints(x);
+        g = constraints.inequalityConstraints;
         
-%         % h: equality constraints, see first homework.
-%         constraints = equalityConstraints(x);
-%         h = constraints.equalityConstraints;
-%         
-%         % dh: Jacobian of h
-%         J = getJacobian(@equalityConstraints,x,...
-%                         'Method',method);
-%         dh = J(1).output;
+        % dg: Jacobian of g.
+        J = getJacobian(@inequalityConstraints,x,...
+                        'Method',method);
+        dg = J(1).output;
+        
+        % h: equality constraints
+        constraints = equalityConstraints(x);
+        h = constraints.equalityConstraints;
+        
+        % dh: Jacobian of h
+        J = getJacobian(@equalityConstraints,x,...
+                        'Method',method);
+        dh = J(1).output;
                
     end
 
     %--- EQUALITY CONSTRAINTS
     function constraints = equalityConstraints(x)
         
+        x = exp(x);
+        x = [0,x];
+        splinePoints = [x.',y.'];
+        [x,y_interpolated] = splineToTrajectory(splinePoints);
+        
         ceq = [];
+        
+        % Setting the exit angle
+        endDeltaX = x(end) - x(end-1);
+        endDeltaY = y_interpolated(end) - y_interpolated(end-1);
+        theta = atan(endDeltaX/endDeltaY) * 180/pi;
+        ceq = [ceq,theta - exitAngle];
         
         constraints.equalityConstraints = ceq;
         
@@ -127,11 +137,36 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     %--- INEQUALITY CONSTRAINTS
     function constraints = inequalityConstraints(x)
         
+        x = exp(x);
+        x = [0,x];
+        splinePoints = [x.',y.'];
+        [x,y_interpolated] = splineToTrajectory(splinePoints);
+        
         c = [];
         
-        for i = 2:length(x)
+        % Setting start angle
+        startDeltaX = x(2) - x(1);
+        startDeltaY = y_interpolated(2) - y_interpolated(1);
+        startAngle = atan(startDeltaX/startDeltaY) * 180/pi;
+        startAngleMin = 5;
+        
+        c = [c,startAngle - startAngleMin];
+        
+        % Maximum turn between points
+        maxTurn = 1; % Degrees
+        
+        for i = 3:length(x)
             
-            c = [c;x(i-1) - x(i) + 10];
+            currentDeltaX = x(i) - x(i-1);
+            currentDeltaY = y_interpolated(i) - y_interpolated(i-1);
+            
+            previousDeltaX = x(i-1) - x(i-2);
+            previousDeltaY = y_interpolated(i-1) - y_interpolated(i-2);
+            
+            currentTheta = atan(currentDeltaX/currentDeltaY) * 180/pi;
+            previousTheta = atan(previousDeltaX/previousDeltaY) * 180/pi;
+            
+            c = [c,currentTheta - previousTheta - maxTurn];
             
         end
         
@@ -142,8 +177,14 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     %---- TRAJECTORY FUNCTION
     function flight = trajectory(x)
         
+        x = exp(x);
+        x = [0,x];
+        splinePoints = [x.',y.'];
+        [x,y_interpolated] = splineToTrajectory(splinePoints);
+        deltaY_interpolated = y_interpolated(2) - y_interpolated(1);
+        
         % Forcing the optimizer to meet these requirements for the end points
-        x = [0,x]; % Putting the zero back in there
+        %x = [0,x]; % Putting the zero back in there
 
         fuelExitVelocity = 2000; % meters/second
 
@@ -163,10 +204,10 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
 
             % Getting initial conditions going for this round
             deltaX = x(k) - x(k-1);
-            height = (k-1) * deltaY;
+            height = (k-1) * deltaY_interpolated;
 
             % Calculate the tilt angle
-            theta = atan(deltaX/deltaY);
+            theta = atan(deltaX/deltaY_interpolated);
 
             % Calculate the drag
             D = getDrag2(velocity(k-1),height); % simple model (not physics-based)
@@ -177,7 +218,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
             T = sqrt(Tx^2 + Ty^2);
 
             % calculate the change in mass
-            deltaTime = sqrt(deltaX^2 + deltaY^2) / velocity(k-1);
+            deltaTime = sqrt(deltaX^2 + deltaY_interpolated^2) / velocity(k-1);
             deltaMass = T / fuelExitVelocity * deltaTime;
 
             % Update some values for the next round
@@ -201,7 +242,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         'HonorBounds', true, ...  % forces optimizer to always satisfy bounds at each iteration
         'Display', 'iter-detailed', ...  % display more information
         'MaxIterations', 1000, ...  % maximum number of iterations
-        'MaxFunctionEvaluations', 10000, ...  % maximum number of function calls
+        'MaxFunctionEvaluations', 1000, ...  % maximum number of function calls
         'OptimalityTolerance', 1e-9, ...  % convergence tolerance on first order optimality
         'ConstraintTolerance', 1e-6, ...  % convergence tolerance on constraints
         'FiniteDifferenceType', 'central', ...  % if finite differencing, can also use central
@@ -226,9 +267,14 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         end
         stop = false; % you can set your own stopping criteria
         
-        downrangeValues = [0,exp(x)];
+        x = exp(x);
+        x = [0,x];
         
-        plot(downrangeValues/1000,y./1000,'*')
+        splinePoints = [x',y'];
+        [x_current,y_current] = splineToTrajectory(splinePoints);
+        
+        plot(x_current./1000,y_current./1000,'-'); hold on
+        plot(x./1000,y./1000,'*')
         title(strcat("Trajectory, Final Rocket Mass = ",sprintf('%03.0f',1e6 - optimValues.fval*1e5)," kg"))
         xlabel("X (km)")
         ylabel("Y (km)")
@@ -241,6 +287,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         ax.YAxis.FontSize = 14;
         ax.Parent.Position = [2 2 6.5 5];
         drawnow()
+        hold off
         
     end
 

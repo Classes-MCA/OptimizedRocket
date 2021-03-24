@@ -14,15 +14,15 @@ function drag = getDrag2(velocity,height)
     
     if real(velocity) < atmosphere.SpeedOfSound % If subsonic
         % Subsonic drag
-        drag = log10(velocity * density + 1) * 1e5;
+        drag = log10(velocity * density + 1) * 1e6;
         
     else % If supersonic
         % Drag increases a lot
-        drag = log10(velocity * density + 1) * 1e5;    
+        drag = log10(velocity * density + 1) * 1e6;    
     end
     
-    if real(height) > 15e3 && real(height) < 25e3
-        drag = 1e6;
+    if real(height) >= 25e3 && real(height) < 50e3
+        drag = 1e7;
     else
         drag = 0;
     end
