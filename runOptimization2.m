@@ -237,6 +237,11 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         %axis equal
         xlim([0,(downrangeDistance/1000)*1.1])
         ylim([0,targetY/1000 * 1.1])
+        ax = gca;
+        ax.Title.FontSize = 16;
+        ax.XAxis.FontSize = 14;
+        ax.YAxis.FontSize = 14;
+        ax.Parent.Position = [2 2 6.5 5];
         drawnow()
         
     end
