@@ -3,7 +3,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     % -------- starting point and bounds ----------
     downrangeDistance = 250e3; % meters
     xPoints = 10;
-    exitAngle = 60;
+    exitAngle = 80;
     dx = downrangeDistance/xPoints;
     x0 = 0:dx:downrangeDistance;
     %x0 = [0,1000 3000 6000 10000];
@@ -16,6 +16,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     % Making all of the x-inputs be of a similar order
     
     lb = [];
+    % ub = zeros(length(x0),1) + log(downrangeDistance + 1);
     ub = [];
     
     % ---------------------------------------------
@@ -242,7 +243,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         'HonorBounds', true, ...  % forces optimizer to always satisfy bounds at each iteration
         'Display', 'iter-detailed', ...  % display more information
         'MaxIterations', 1000, ...  % maximum number of iterations
-        'MaxFunctionEvaluations', 1000, ...  % maximum number of function calls
+        'MaxFunctionEvaluations', 10000, ...  % maximum number of function calls
         'OptimalityTolerance', 1e-9, ...  % convergence tolerance on first order optimality
         'ConstraintTolerance', 1e-6, ...  % convergence tolerance on constraints
         'FiniteDifferenceType', 'central', ...  % if finite differencing, can also use central
