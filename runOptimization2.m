@@ -2,21 +2,18 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
 
     % -------- starting point and bounds ----------
     downrangeDistance = 15e3; % meters
-    xPoints = 60;
-    exitAngle = 70; % Degrees
+    xPoints = 5;
     dx = downrangeDistance/xPoints;
     x0 = 0:dx:downrangeDistance;
-    %x0 = logspace(0,log10(downrangeDistance),xPoints+1);
     
     targetY = 50e3; % meters
     deltaY = targetY / length(x0); % meters
     y = 0:deltaY:targetY - deltaY;
     
     % Making all of the x-inputs be of a similar order
-    x0 = log(x0(2:end)); % Removing the first zero
     
     lb = [];
-    ub = log(ones(1,length(x0)) .* downrangeDistance + 0.01);
+    ub = [];
     
     
     % ---------------------------------------------
@@ -70,7 +67,8 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     % ---- Objective and Constraints -------------
     function [f, g, h, df, dg, dh] = objcon(x)
 
-        x = exp(x);
+        splinePoints = [x',y'];
+        [x,~] = splineToTrajectory(splinePoints);
         
         % set objective/constraints here
         % f: objective
