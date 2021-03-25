@@ -6,6 +6,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     exitAngle = 80;
     dx = downrangeDistance/xPoints;
     x0 = 0:dx:downrangeDistance;
+    x0 = logspace(0,log10(downrangeDistance),xPoints);
     %x0 = [0,1000 3000 6000 10000];
     x0 = log(x0(2:end));
     
@@ -16,7 +17,6 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     % Making all of the x-inputs be of a similar order
     
     lb = [];
-    % ub = zeros(length(x0),1) + log(downrangeDistance + 1);
     ub = [];
     
     % ---------------------------------------------
@@ -48,7 +48,6 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     A = A(:,1:length(x0));
     
     b = zeros(length(A(:,1)),1);
-    %b(1:length(x0)-1) = ones(length(x0)-1,1);
 
     %A = []; b = [];
     
@@ -274,8 +273,8 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         splinePoints = [x',y'];
         [x_current,y_current] = splineToTrajectory(splinePoints);
         
-        plot(x_current./1000,y_current./1000,'-'); hold on
-        plot(x./1000,y./1000,'*')
+        plot(x./1000,y./1000,'*'); hold on
+        plot(x_current./1000,y_current./1000,'-');
         title(strcat("Trajectory, Final Rocket Mass = ",sprintf('%03.0f',1e6 - optimValues.fval*1e5)," kg"))
         xlabel("X (km)")
         ylabel("Y (km)")
@@ -287,6 +286,9 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         ax.XAxis.FontSize = 14;
         ax.YAxis.FontSize = 14;
         ax.Parent.Position = [2 2 6.5 5];
+        legend('Spline Points','Interpolated Trajectory',...
+               'Location','NorthWest',...
+               'FontSize',16)
         drawnow()
         hold off
         
