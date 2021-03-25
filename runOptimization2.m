@@ -6,7 +6,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     exitAngle = 80;
     dx = downrangeDistance/xPoints;
     x0 = 0:dx:downrangeDistance;
-    x0 = logspace(0,log10(downrangeDistance),xPoints);
+    %x0 = logspace(0,log10(downrangeDistance),xPoints);
     %x0 = [0,1000 3000 6000 10000];
     x0 = log(x0(2:end));
     
@@ -238,7 +238,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
 
     % ----------- options ----------------------------
     options = optimoptions('fmincon', ...
-        'Algorithm', 'interior-point', ...  % choose one of: 'interior-point', 'sqp', 'active-set', 'trust-region-reflective'
+        'Algorithm', 'active-set', ...  % choose one of: 'interior-point', 'sqp', 'active-set', 'trust-region-reflective'
         'HonorBounds', true, ...  % forces optimizer to always satisfy bounds at each iteration
         'Display', 'iter-detailed', ...  % display more information
         'MaxIterations', 1000, ...  % maximum number of iterations
