@@ -19,6 +19,10 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     lb = [];
     ub = [];
     
+    % Whether to create a GIF file of the convergence
+    makeGIF = false;
+    frameRate = 10;
+    
     % ---------------------------------------------
 
     % ------ linear constraints ----------------
@@ -238,7 +242,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
 
     % ----------- options ----------------------------
     options = optimoptions('fmincon', ...
-        'Algorithm', 'active-set', ...  % choose one of: 'interior-point', 'sqp', 'active-set', 'trust-region-reflective'
+        'Algorithm', 'interior-point', ...  % choose one of: 'interior-point', 'sqp', 'active-set', 'trust-region-reflective'
         'HonorBounds', true, ...  % forces optimizer to always satisfy bounds at each iteration
         'Display', 'iter-detailed', ...  % display more information
         'MaxIterations', 1000, ...  % maximum number of iterations
@@ -292,6 +296,27 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         drawnow()
         hold off
         
+        if makeGIF
+            createGIF(optimValues.iteration,frameRate)
+        end
+        
+    end
+
+    function createGIF(i,FrameRate)
+
+        frame = getframe(gcf);
+        im = frame2im(frame);
+        [imind,cm] = rgb2ind(im,256);
+
+        filename = "OptimizationGIF.gif";
+
+        % Write to the GIF File 
+        if i == 0
+            imwrite(imind,cm,filename,'gif', 'DelayTime',1/FrameRate, 'Loopcount',inf); 
+        else 
+            imwrite(imind,cm,filename,'gif', 'DelayTime',1/FrameRate,'WriteMode','append'); 
+        end 
+
     end
 
 
