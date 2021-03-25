@@ -275,7 +275,7 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
         
         plot(x./1000,y./1000,'*'); hold on
         plot(x_current./1000,y_current./1000,'-');
-        title(strcat("Trajectory, Final Rocket Mass = ",sprintf('%03.0f',1e6 - optimValues.fval*1e5)," kg"))
+        title(strcat("Trajectory, Final Rocket Mass = ",sprintf('%03.0f',1e6 - optimValues.fval*1e6)," kg"))
         xlabel("X (km)")
         ylabel("Y (km)")
         %axis equal
