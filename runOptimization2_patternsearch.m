@@ -1,12 +1,12 @@
-function [xopt, fopt, exitflag, output] = runOptimization2()
+function [xopt, fopt, exitflag, output] = runOptimization2_patternsearch()
 
     % -------- starting point and bounds ----------
     downrangeDistance = 250e3; % meters
     xPoints = 10;
     exitAngle = 80;
     dx = downrangeDistance/xPoints;
-    x0 = 0:dx:downrangeDistance;
-    %x0 = logspace(0,log10(downrangeDistance),xPoints);
+    %x0 = 0:dx:downrangeDistance;
+    x0 = logspace(0,log10(downrangeDistance),xPoints);
     %x0 = [0,1000 3000 6000 10000];
     x0 = log(x0(2:end));
     
@@ -18,10 +18,6 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     
     lb = [];
     ub = [];
-    
-    % Whether to create a GIF file of the convergence
-    makeGIF = false;
-    frameRate = 10;
     
     % ---------------------------------------------
 
@@ -241,85 +237,19 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     % -------------------------------------------
 
     % ----------- options ----------------------------
-    options = optimoptions('fmincon', ...
-        'Algorithm', 'interior-point', ...  % choose one of: 'interior-point', 'sqp', 'active-set', 'trust-region-reflective'
-        'HonorBounds', true, ...  % forces optimizer to always satisfy bounds at each iteration
-        'Display', 'iter-detailed', ...  % display more information
+    options = optimoptions('patternsearch', ...
+        'Display', 'iter', ...  % display more information
         'MaxIterations', 1000, ...  % maximum number of iterations
         'MaxFunctionEvaluations', 10000, ...  % maximum number of function calls
-        'OptimalityTolerance', 1e-9, ...  % convergence tolerance on first order optimality
         'ConstraintTolerance', 1e-6, ...  % convergence tolerance on constraints
-        'FiniteDifferenceType', 'central', ...  % if finite differencing, can also use central
-        'SpecifyObjectiveGradient', true, ...  % supply gradients of objective
-        'SpecifyConstraintGradient', true, ...  % supply gradients of constraints
-        'CheckGradients', false, ...  % true if you want to check your supplied gradients against finite differencing
-        'Diagnostics', 'on',... % display diagnotic information
-        'OutputFcn',@outfun,...
         'StepTolerance',1e-16,...
-        'FunctionTolerance',1e-12,...
-        'ScaleProblem',true);
+        'PollMethod','GSSPositiveBasis2N',...
+        'FunctionTolerance',1e-12);
     % -------------------------------------------
     
     opt = [];
     funcCallCount = [];
     
-    % Creating an output function
-    function stop = outfun(x,optimValues,state)
-        opt = [opt;optimValues.firstorderopt];
-        if ~isempty(optimValues.firstorderopt)
-            funcCallCount = [funcCallCount;funcCount];
-        end
-        stop = false; % you can set your own stopping criteria
-        
-        x = exp(x);
-        x = [0,x];
-        
-        splinePoints = [x',y'];
-        [x_current,y_current] = splineToTrajectory(splinePoints);
-        
-        plot(x./1000,y./1000,'*'); hold on
-        plot(x_current./1000,y_current./1000,'-');
-        title(strcat("Trajectory, Final Rocket Mass = ",sprintf('%03.0f',1e6 - optimValues.fval*1e5)," kg"))
-        xlabel("X (km)")
-        ylabel("Y (km)")
-        %axis equal
-        xlim([0,(downrangeDistance/1000)*1.1])
-        ylim([0,targetY/1000 * 1.1])
-        ax = gca;
-        ax.Title.FontSize = 16;
-        ax.XAxis.FontSize = 14;
-        ax.YAxis.FontSize = 14;
-        ax.Parent.Position = [2 2 6.5 5];
-        legend('Spline Points','Interpolated Trajectory',...
-               'Location','NorthWest',...
-               'FontSize',16)
-        drawnow()
-        hold off
-        
-        if makeGIF
-            createGIF(optimValues.iteration,frameRate)
-        end
-        
-    end
-
-    function createGIF(i,FrameRate)
-
-        frame = getframe(gcf);
-        im = frame2im(frame);
-        [imind,cm] = rgb2ind(im,256);
-
-        filename = "OptimizationGIF.gif";
-
-        % Write to the GIF File 
-        if i == 0
-            imwrite(imind,cm,filename,'gif', 'DelayTime',1/FrameRate, 'Loopcount',inf); 
-        else 
-            imwrite(imind,cm,filename,'gif', 'DelayTime',1/FrameRate,'WriteMode','append'); 
-        end 
-
-    end
-
-
     % -- NOTE: no need to change anything below) --
     % see: https://www.mathworks.com/help/optim/ug/objective-and-nonlinear-constraints-in-the-same-function.html
     
@@ -365,10 +295,33 @@ function [xopt, fopt, exitflag, output] = runOptimization2()
     % ------------------------------------------------
 
     % call fmincon
-    [xopt, fopt, exitflag, output] = fmincon(@obj, x0, A, b, Aeq, beq, lb, ub, @con, options);
+    [xopt, fopt, exitflag, output] = patternsearch(@obj, x0, A, b, Aeq, beq, lb, ub, @con, options);
 
     output.opt = opt;
     output.funcCallCount = funcCallCount;
+    
+    x = exp(xopt);
+    x = [0,x];
+
+    splinePoints = [x',y'];
+    [x_current,y_current] = splineToTrajectory(splinePoints);
+
+    plot(x./1000,y./1000,'*'); hold on
+    plot(x_current./1000,y_current./1000,'-');
+    title(strcat("Trajectory, Final Rocket Mass = ",sprintf('%03.0f',1e6 - fopt*1e6)," kg"))
+    xlabel("X (km)")
+    ylabel("Y (km)")
+    %axis equal
+    xlim([0,(downrangeDistance/1000)*1.1])
+    ylim([0,targetY/1000 * 1.1])
+    ax = gca;
+    ax.Title.FontSize = 16;
+    ax.XAxis.FontSize = 14;
+    ax.YAxis.FontSize = 14;
+    ax.Parent.Position = [2 2 6.5 5];
+    legend('Spline Points','Interpolated Trajectory',...
+           'Location','NorthWest',...
+           'FontSize',16)
     
 %     figure()
 %     plot(exp(xopt)./1000,y./1000)
